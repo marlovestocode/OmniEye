@@ -1,0 +1,59 @@
+{
+  "source": "HYG 4.1 (Astronexus)",
+  "license": "CC BY-SA 4.0",
+  "epoch": "J2000.0",
+  "frame": "EQJ - mean equator and equinox of J2000",
+  "count": 15598,
+  "stride": 8,
+  "magLimit": 7,
+  "fields": [
+    "ux",
+    "uy",
+    "uz",
+    "mag",
+    "ci",
+    "pmx",
+    "pmy",
+    "pmz"
+  ],
+  "pmUnits": "radians per year, angular velocity vector",
+  "tiers": [
+    {
+      "mag": 2,
+      "count": 50
+    },
+    {
+      "mag": 3,
+      "count": 179
+    },
+    {
+      "mag": 4,
+      "count": 523
+    },
+    {
+      "mag": 4.5,
+      "count": 925
+    },
+    {
+      "mag": 5,
+      "count": 1637
+    },
+    {
+      "mag": 5.5,
+      "count": 2865
+    },
+    {
+      "mag": 6,
+      "count": 5070
+    },
+    {
+      "mag": 6.5,
+      "count": 8920
+    },
+    {
+      "mag": 7,
+      "count": 15598
+    }
+  ],
+  "builtAt": "2026-08-20T03:26:57.960Z"
+}

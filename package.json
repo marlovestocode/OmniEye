@@ -6,18 +6,34 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "catalog:fetch": "node scripts/fetch-catalogs.mjs",
+    "catalog:build": "node scripts/build-catalogs.mjs",
+    "verify": "npm run verify:astro && npm run verify:solar && npm run verify:detect && npm run verify:solve",
+    "verify:astro": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/register-ts.mjs scripts/verify-astro.mjs",
+    "verify:solar": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/register-ts.mjs scripts/verify-solar.mjs",
+    "verify:detect": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/register-ts.mjs scripts/verify-detect.mjs",
+    "verify:solve": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/register-ts.mjs scripts/verify-solve.mjs"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "astronomy-engine": "^2.1.19",
+    "comlink": "^4.4.2",
+    "exifr": "^7.1.3",
+    "ml-matrix": "^6.15.0",
     "next": "16.3.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "three": "^0.185.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",

@@ -1,26 +1,197 @@
 @import "tailwindcss";
 
+/*
+ * OmniEye's visual language.
+ *
+ * The three layers are three colour families, and they never borrow from each
+ * other. That separation is the product: a reader must be able to tell, at a
+ * glance and without a legend, whether OmniEye is claiming to have seen
+ * something or merely predicting that it should be there.
+ *
+ *   predicted    cool blue-violet, thin, wireframe. A hypothesis.
+ *   observed     warm amber, solid, traced. Evidence from the image itself.
+ *   matched      aqua, with a glow. The two agreeing, and the only family
+ *                permitted to carry a name stated as fact.
+ *   unexplained  rose. Detected, and nothing in the catalogue accounts for it.
+ *
+ * Everything is dark because the subject is. The interface is an instrument
+ * sitting beside a night sky, not a document about one.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* ground */
+  --ink: #04060c;
+  --ink-raised: #080b14;
+  --panel: rgba(10, 14, 24, 0.82);
+  --panel-edge: rgba(140, 165, 220, 0.14);
+  --panel-edge-strong: rgba(140, 165, 220, 0.28);
+
+  /* type */
+  --text: #dbe4f7;
+  --text-dim: #8b98b5;
+  --text-faint: #5a6683;
+
+  /* layer 1 — predicted */
+  --predicted: #8aa2ff;
+  --predicted-dim: rgba(138, 162, 255, 0.42);
+  --predicted-faint: rgba(138, 162, 255, 0.16);
+
+  /* layer 2 — observed */
+  --observed: #ffb765;
+  --observed-dim: rgba(255, 183, 101, 0.5);
+  --observed-faint: rgba(255, 183, 101, 0.18);
+
+  /* layer 3 — matched */
+  --matched: #6ff0cd;
+  --matched-dim: rgba(111, 240, 205, 0.5);
+  --matched-glow: rgba(111, 240, 205, 0.28);
+
+  /* detected, unaccounted for */
+  --unexplained: #ff8fb0;
+  --unexplained-dim: rgba(255, 143, 176, 0.45);
+
+  /* the observer's own frame */
+  --horizon: #3f7f86;
+  --cardinal: #7fd3cf;
+  --grid: rgba(120, 150, 210, 0.13);
+
+  --warn: #ffcf70;
+  --alert: #ff7b7b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-raised: var(--ink-raised);
+  --color-panel: var(--panel);
+  --color-edge: var(--panel-edge);
+  --color-edge-strong: var(--panel-edge-strong);
+  --color-text: var(--text);
+  --color-dim: var(--text-dim);
+  --color-faint: var(--text-faint);
+  --color-predicted: var(--predicted);
+  --color-observed: var(--observed);
+  --color-matched: var(--matched);
+  --color-unexplained: var(--unexplained);
+  --color-horizon: var(--horizon);
+  --color-cardinal: var(--cardinal);
+  --color-warn: var(--warn);
+  --color-alert: var(--alert);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
+  background: var(--ink);
+  color: var(--text);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Instrument type. Readouts are monospaced and letter-spaced so that a number
+ * changing in place does not shift everything after it -- a value that jitters
+ * horizontally reads as unstable even when it is not.
+ */
+.readout {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.label-caps {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+
+/* Hairline rules: at 1px these read as engraving rather than as borders. */
+.hairline {
+  border-color: var(--panel-edge);
+}
+
+/* Scrollbars, kept out of the way of the sky. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-edge-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--panel-edge-strong);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/*
+ * A match is discovered once. The connection animates briefly when it is made and
+ * then settles, because a hundred permanently bright lines between the photo and
+ * the sky would obscure the very thing they are pointing at.
+ */
+@keyframes match-settle {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 100;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.22;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-sweep {
+  animation: sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sweep,
+  .animate-pulse-soft {
+    animation: none;
+  }
 }
