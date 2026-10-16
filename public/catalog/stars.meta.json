@@ -3,9 +3,9 @@
   "license": "CC BY-SA 4.0",
   "epoch": "J2000.0",
   "frame": "EQJ - mean equator and equinox of J2000",
-  "count": 15598,
+  "count": 83479,
   "stride": 8,
-  "magLimit": 7,
+  "magLimit": 9,
   "fields": [
     "ux",
     "uy",
@@ -53,7 +53,23 @@
     {
       "mag": 7,
       "count": 15598
+    },
+    {
+      "mag": 7.5,
+      "count": 25791
+    },
+    {
+      "mag": 8,
+      "count": 41487
+    },
+    {
+      "mag": 8.5,
+      "count": 61816
+    },
+    {
+      "mag": 9,
+      "count": 83479
     }
   ],
-  "builtAt": "2026-08-20T03:26:57.960Z"
+  "builtAt": "2026-10-16T01:04:13.741Z"
 }

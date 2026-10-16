@@ -19,7 +19,7 @@
  * `normalise(u + dt * omega)` -- no trigonometry per star, and no chance of the
  * classic mu_alpha vs mu_alpha*cos(dec) mix-up leaking into the renderer.
  *
- *   node scripts/build-catalogs.mjs [--mag 7.0]
+ *   node scripts/build-catalogs.mjs [--mag 9.0]
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -33,11 +33,15 @@ const STRIDE = 8;
 const MAS_TO_RAD = Math.PI / (180 * 3600 * 1000);
 
 const argMag = process.argv.indexOf('--mag');
-const MAG_LIMIT = argMag > -1 ? Number(process.argv[argMag + 1]) : 7.0;
+// Magnitude 9: ~83,000 stars, ~2.7 MB uncompressed. The stars HYG adds per half
+// magnitude grow up to here (+20k, +22k) and then fall away (+16k, +9k at 9.5 and
+// 10), whereas a complete catalogue keeps growing. Cutting deeper would draw the
+// catalogue's gaps as if they were sky.
+const MAG_LIMIT = argMag > -1 ? Number(process.argv[argMag + 1]) : 9.0;
 /** Stars this bright get a name entry even without a proper name. */
 const NAME_MAG_LIMIT = 6.5;
 /** Magnitude tiers the renderer can slice to without re-fetching. */
-const TIERS = [2.0, 3.0, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0];
+const TIERS = [2.0, 3.0, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0];
 
 // -- CSV ----------------------------------------------------------------------
 

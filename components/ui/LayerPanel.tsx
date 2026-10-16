@@ -95,7 +95,7 @@ export function LayerPanel({ hasObservation }: { hasObservation: boolean }) {
           label="Limiting magnitude"
           value={scene.magnitudeLimit}
           min={1}
-          max={7}
+          max={9}
           step={0.25}
           onChange={(v) => setSceneOption('magnitudeLimit', v)}
           format={(v) => `${v.toFixed(2)}  ·  ${starCount.toLocaleString()} stars`}
