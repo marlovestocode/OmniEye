@@ -64,13 +64,43 @@ function CameraRig() {
     target.current = { altitude: view.altitude, azimuth: view.azimuth, fovDeg: view.fovDeg };
   }, [view.altitude, view.azimuth, view.fovDeg]);
 
+  // Every finger currently down, so a second one can turn the drag into a pinch.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ distance: number; fovDeg: number } | null>(null);
+
+  const spread = () => {
+    const [a, b] = [...pointers.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
   const onPointerDown = useCallback((event: PointerEvent) => {
-    dragging.current = { x: event.clientX, y: event.clientY };
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     (event.target as Element).setPointerCapture?.(event.pointerId);
+
+    if (pointers.current.size === 2) {
+      // Second finger: stop panning and start measuring the gap between them.
+      dragging.current = null;
+      pinch.current = { distance: Math.max(spread(), 1), fovDeg: target.current.fovDeg };
+    } else if (pointers.current.size === 1) {
+      dragging.current = { x: event.clientX, y: event.clientY };
+    }
   }, []);
 
   const onPointerMove = useCallback(
     (event: PointerEvent) => {
+      if (!pointers.current.has(event.pointerId)) return;
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (pinch.current && pointers.current.size >= 2) {
+        // Fingers apart narrows the field (zoom in); together widens it. The
+        // ratio is taken against the gap when the pinch began, so it is stable
+        // however far apart the fingers happened to land.
+        const next = pinch.current.fovDeg * (pinch.current.distance / Math.max(spread(), 1));
+        target.current.fovDeg = Math.max(4, Math.min(120, next));
+        setView({ fovDeg: target.current.fovDeg });
+        return;
+      }
+
       const start = dragging.current;
       if (!start) return;
       const dx = event.clientX - start.x;
@@ -84,15 +114,30 @@ function CameraRig() {
       target.current.azimuth = wrapAzimuth(target.current.azimuth - dx * perPixel);
       target.current.altitude = clampAltitude(target.current.altitude + dy * perPixel);
     },
-    [gl],
+    [gl, setView],
   );
 
   const onPointerUp = useCallback(
     (event: PointerEvent) => {
-      if (!dragging.current) return;
-      dragging.current = null;
+      if (!pointers.current.delete(event.pointerId)) return;
       (event.target as Element).releasePointerCapture?.(event.pointerId);
-      setView({ altitude: target.current.altitude, azimuth: target.current.azimuth });
+
+      if (pointers.current.size === 1) {
+        // One finger lifted mid-pinch: carry on panning with the other, from
+        // where it is now, so the view does not jump.
+        const [rest] = [...pointers.current.values()];
+        pinch.current = null;
+        dragging.current = { x: rest.x, y: rest.y };
+      } else if (pointers.current.size === 0) {
+        pinch.current = null;
+        dragging.current = null;
+      }
+
+      setView({
+        altitude: target.current.altitude,
+        azimuth: target.current.azimuth,
+        fovDeg: target.current.fovDeg,
+      });
     },
     [setView],
   );
