@@ -85,7 +85,7 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       title={hint}
       aria-pressed={checked}
-      className="group flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-white/[0.04]"
+      className="group flex w-full items-center gap-2.5 rounded px-2 py-2.5 text-left transition-colors hover:bg-white/[0.04] md:py-1.5"
     >
       <span
         className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-all"

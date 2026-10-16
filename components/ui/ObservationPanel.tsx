@@ -55,7 +55,7 @@ export function ObservationPanel({
   const running = observation.steps.some((s) => s.status === 'active');
 
   return (
-    <Panel className="flex w-[340px] max-h-full flex-col overflow-hidden">
+    <Panel className="flex max-h-full w-full flex-col overflow-hidden md:w-[340px]">
       <PanelHeader
         title="Observation"
         right={
@@ -65,7 +65,7 @@ export function ObservationPanel({
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="scroll-contain min-h-0 flex-1 overflow-y-auto">
         <div className="p-3">
           <SourceOverlay
             imageUrl={observation.imageUrl}

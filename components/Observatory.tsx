@@ -28,7 +28,8 @@ import { summarise, type Observation } from '@/lib/sky/evidence';
 import { buildCandidates, chooseFrame } from '@/lib/solve/candidates';
 import { solve } from '@/lib/solve/client';
 import { buildMatchedSky } from '@/lib/solve/match';
-import { primeSky, useOmniEye } from '@/lib/state/store';
+import { primeSky, useOmniEye, type ObservationState } from '@/lib/state/store';
+import { useIsCompact } from '@/lib/state/useMediaQuery';
 import { useMounted } from '@/lib/state/useMounted';
 import { SkyCanvas } from './scene/SkyCanvas';
 import { EvidenceGrid } from './ui/EvidenceGrid';
@@ -47,6 +48,7 @@ export function Observatory() {
   const observation = useOmniEye((s) => s.observation);
   const [dragging, setDragging] = useState(false);
   const mounted = useMounted();
+  const compact = useIsCompact();
 
   // -- reference data ---------------------------------------------------------
   useEffect(() => {
@@ -116,6 +118,16 @@ export function Observatory() {
   // to reconcile a timestamp that moved between the two.
   if (!mounted) return <LoadingSky status="loading" error={null} />;
 
+  const sheetProps = {
+    summary,
+    observation,
+    onImport: importMedia,
+    onRedetect: (thresholdSigma: number) => {
+      useOmniEye.getState().setDetectionParams({ thresholdSigma });
+      void importMedia(null, { thresholdSigma });
+    },
+  };
+
   return (
     <div
       className="relative h-full w-full overflow-hidden"
@@ -135,48 +147,51 @@ export function Observatory() {
         )}
       </div>
 
-      {/* Chrome floats over it. */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col p-3">
-        <div className="relative flex items-start justify-between gap-3">
-          <TopBar onRequestLocation={requestLocation} />
-        </div>
-
-        <div className="mt-3 flex min-h-0 flex-1 items-start justify-between gap-3">
-          <div className="pointer-events-auto flex max-h-full flex-col gap-3 overflow-y-auto">
-            <LayerPanel hasObservation={observation !== null} />
-            <Legend hasObservation={observation !== null} hasMatches={summary.matched > 0} />
+      {/* Chrome floats over it. Two shells, one set of panels: a wide screen can
+          afford columns beside the sky, a phone cannot, so it gets a bottom sheet
+          that opens over it instead. */}
+      {compact ? (
+        <CompactChrome onRequestLocation={requestLocation} {...sheetProps} />
+      ) : (
+        <div className="pointer-events-none absolute inset-0 flex flex-col p-3">
+          <div className="relative flex items-start justify-between gap-3">
+            <TopBar onRequestLocation={requestLocation} />
           </div>
 
-          <div className="pointer-events-auto flex max-h-full min-h-0 flex-col items-end gap-3">
-            {/* shrink-0: in a max-height flex column the grid would otherwise be
-                compressed and spill its cells past the panel edge. */}
-            <div className="shrink-0">
-              <EvidenceGrid
-                summary={summary}
-                hasObservation={observation !== null}
-                hasSolve={observation?.solve?.ok === true}
-              />
+          <div className="mt-3 flex min-h-0 flex-1 items-start justify-between gap-3">
+            <div className="pointer-events-auto flex max-h-full flex-col gap-3 overflow-y-auto">
+              <LayerPanel hasObservation={observation !== null} />
+              <Legend hasObservation={observation !== null} hasMatches={summary.matched > 0} />
             </div>
-            {observation ? (
-              <ObservationPanel
-                observation={observation}
-                onImport={importMedia}
-                onClear={() => useOmniEye.getState().clearObservation()}
-                onRedetect={(thresholdSigma) => {
-                  useOmniEye.getState().setDetectionParams({ thresholdSigma });
-                  void importMedia(null, { thresholdSigma });
-                }}
-              />
-            ) : (
-              <ImportPrompt onImport={importMedia} />
-            )}
+
+            <div className="pointer-events-auto flex max-h-full min-h-0 flex-col items-end gap-3">
+              {/* shrink-0: in a max-height flex column the grid would otherwise be
+                  compressed and spill its cells past the panel edge. */}
+              <div className="shrink-0">
+                <EvidenceGrid
+                  summary={summary}
+                  hasObservation={observation !== null}
+                  hasSolve={observation?.solve?.ok === true}
+                />
+              </div>
+              {observation ? (
+                <ObservationPanel
+                  observation={observation}
+                  onImport={importMedia}
+                  onClear={() => useOmniEye.getState().clearObservation()}
+                  onRedetect={sheetProps.onRedetect}
+                />
+              ) : (
+                <ImportPrompt onImport={importMedia} />
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 flex justify-center">
+            <ReadoutBar />
           </div>
         </div>
-
-        <div className="mt-3 flex justify-center">
-          <ReadoutBar />
-        </div>
-      </div>
+      )}
 
       {dragging && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[var(--ink)]/70 backdrop-blur-sm">
@@ -185,6 +200,121 @@ export function Observatory() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type SheetTab = 'layers' | 'evidence' | 'observation';
+
+/**
+ * The phone shell.
+ *
+ * Three layers, back to front:
+ *
+ *   the sky        full bleed, always interactive -- drag to look, pinch to zoom
+ *   the glance     a slim top bar (when, where) and a readout strip (aimed at)
+ *   the sheet      one panel at a time, opened from the dock, over the sky
+ *
+ * The column is a flex stack whose middle is deliberately empty: that gap is the
+ * window onto the sky, and it is `pointer-events-none` so touches fall through to
+ * the canvas. Only the bars and the sheet catch input. Opening the sheet swaps the
+ * readout out rather than stacking on top of it, so the screen never carries more
+ * than one band of chrome above the dock.
+ */
+function CompactChrome({
+  summary,
+  observation,
+  onImport,
+  onRedetect,
+  onRequestLocation,
+}: {
+  summary: ReturnType<typeof summarise>;
+  observation: ObservationState | null;
+  onImport: (file: File) => void;
+  onRedetect: (thresholdSigma: number) => void;
+  onRequestLocation: () => void;
+}) {
+  const [tab, setTab] = useState<SheetTab | null>(null);
+
+  const tabs: { id: SheetTab; label: string; badge?: string; tone: string }[] = [
+    { id: 'layers', label: 'Layers', tone: 'var(--predicted)' },
+    {
+      id: 'evidence',
+      label: 'Evidence',
+      badge: summary.matched > 0 ? `${summary.matched}` : undefined,
+      tone: 'var(--matched)',
+    },
+    { id: 'observation', label: observation ? 'Observation' : 'Import', tone: 'var(--observed)' },
+  ];
+
+  return (
+    <div className="px-safe pt-safe pb-safe pointer-events-none absolute inset-0 flex flex-col gap-2">
+      <TopBar compact onRequestLocation={onRequestLocation} />
+
+      {/* The window onto the sky. */}
+      <div className="min-h-0 flex-1" />
+
+      {tab ? (
+        <div className="scroll-contain animate-sheet pointer-events-auto flex max-h-[58dvh] min-h-0 shrink flex-col gap-2 overflow-y-auto [&>*]:shrink-0">
+          {tab === 'layers' && (
+            <>
+              <LayerPanel hasObservation={observation !== null} />
+              <Legend hasObservation={observation !== null} hasMatches={summary.matched > 0} />
+            </>
+          )}
+          {tab === 'evidence' && (
+            <EvidenceGrid
+              summary={summary}
+              hasObservation={observation !== null}
+              hasSolve={observation?.solve?.ok === true}
+            />
+          )}
+          {tab === 'observation' &&
+            (observation ? (
+              <ObservationPanel
+                observation={observation}
+                onImport={onImport}
+                onClear={() => useOmniEye.getState().clearObservation()}
+                onRedetect={onRedetect}
+              />
+            ) : (
+              <ImportPrompt onImport={onImport} />
+            ))}
+        </div>
+      ) : (
+        <ReadoutBar compact />
+      )}
+
+      <Panel className="pointer-events-auto grid grid-cols-3 overflow-hidden" role="tablist" aria-label="Panels">
+        {tabs.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(active ? null : t.id)}
+              className="relative flex min-h-[46px] items-center justify-center gap-1.5 px-2 transition-colors active:bg-white/[0.06]"
+              style={{ background: active ? 'rgba(255,255,255,0.05)' : undefined }}
+            >
+              {/* The accent rule sits on the edge facing the sheet. */}
+              <span
+                className="absolute inset-x-3 top-0 h-px transition-opacity"
+                style={{ background: t.tone, opacity: active ? 1 : 0 }}
+              />
+              <span className="label-caps !text-[10px]" style={{ color: active ? t.tone : undefined }}>
+                {t.label}
+              </span>
+              {t.badge && (
+                <span className="readout text-[10px]" style={{ color: t.tone }}>
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </Panel>
     </div>
   );
 }
@@ -376,7 +506,7 @@ function useImportMedia() {
 
 function ImportPrompt({ onImport }: { onImport: (file: File) => void }) {
   return (
-    <Panel className="w-[248px] p-4">
+    <Panel className="w-full p-4 md:w-[248px]">
       <span className="label-caps">Observation</span>
       <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-dim)]">
         Import a photograph of the night sky. OmniEye will trace the point sources actually present in it,

@@ -23,7 +23,7 @@ export function LayerPanel({ hasObservation }: { hasObservation: boolean }) {
   const starCount = catalogs ? catalogs.stars.countBrighterThan(scene.magnitudeLimit) : 0;
 
   return (
-    <Panel className="w-[228px] overflow-hidden">
+    <Panel className="w-full overflow-hidden md:w-[228px]">
       <PanelHeader title="Layers" />
 
       <div className="p-1">

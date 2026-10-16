@@ -22,7 +22,7 @@ import { constellationAt } from '@/lib/astro/predicted';
 import { useOmniEye } from '@/lib/state/store';
 import { Panel } from './primitives';
 
-export function ReadoutBar() {
+export function ReadoutBar({ compact = false }: { compact?: boolean }) {
   const view = useOmniEye((s) => s.view);
   const sky = useOmniEye((s) => s.sky);
 
@@ -33,6 +33,21 @@ export function ReadoutBar() {
     const { ra, dec } = vectorToRaDec(eqj);
     return { ra, dec, constellation: constellationAt(sky.rotation, scene) };
   }, [view.altitude, view.azimuth, sky]);
+
+  if (compact) {
+    // Two rows of three, label over value: the values are fixed-width monospace,
+    // so stacking the label is what buys the width a phone does not have.
+    return (
+      <Panel className="pointer-events-auto grid w-full grid-cols-3 gap-x-3 gap-y-1.5 px-3 py-2">
+        <StackedReadout label="alt" value={formatDeg(view.altitude, 1)} />
+        <StackedReadout label="az" value={`${formatDeg(view.azimuth, 1)} ${compassPoint(view.azimuth)}`} />
+        <StackedReadout label="field" value={formatDeg(view.fovDeg, 1)} tone="var(--text-dim)" />
+        <StackedReadout label="ra" value={aim ? formatRa(aim.ra) : '—'} tone="var(--predicted)" />
+        <StackedReadout label="dec" value={aim ? formatDec(aim.dec) : '—'} tone="var(--predicted)" />
+        <StackedReadout label="in" value={aim ? aim.constellation.name : '—'} tone="var(--predicted)" />
+      </Panel>
+    );
+  }
 
   return (
     <Panel className="pointer-events-auto flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2">
@@ -48,6 +63,17 @@ export function ReadoutBar() {
       <span className="h-4 w-px bg-[var(--panel-edge)]" />
       <Readout label="field" value={formatDeg(view.fovDeg, 1)} tone="var(--text-dim)" />
     </Panel>
+  );
+}
+
+function StackedReadout({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="label-caps !text-[9px]">{label}</span>
+      <span className="readout truncate text-[12px] leading-tight" style={{ color: tone ?? 'var(--text)' }}>
+        {value}
+      </span>
+    </span>
   );
 }
 

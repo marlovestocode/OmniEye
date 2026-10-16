@@ -89,6 +89,35 @@ body {
   color: var(--text);
 }
 
+/*
+ * On a phone, 100% resolves against the largest viewport, so the bottom of the
+ * layout sits behind the browser toolbar. dvh tracks the toolbar as it moves.
+ */
+@supports (height: 100dvh) {
+  html,
+  body {
+    height: 100dvh;
+  }
+}
+
+/* Stop a scrolling sheet from handing its overscroll to the page behind it. */
+.scroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe-area padding helpers for chrome pinned to the screen edges. */
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+.px-safe {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+
 body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   overflow: hidden;
@@ -162,6 +191,17 @@ body {
   }
 }
 
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes sweep {
   0% {
     transform: translateX(-100%);
@@ -181,6 +221,10 @@ body {
   }
 }
 
+.animate-sheet {
+  animation: sheet-up 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .animate-sweep {
   animation: sweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -189,8 +233,48 @@ body {
   animation: pulse-soft 1.8s ease-in-out infinite;
 }
 
+/*
+ * Range inputs. The primitives strip the native appearance for a hairline track,
+ * which also strips the thumb -- on a touch screen that leaves nothing to grab.
+ * A real thumb and a taller hit area, without changing the look of the track.
+ */
+input[type='range'] {
+  height: 20px;
+  background: transparent !important;
+  touch-action: pan-y;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--panel-edge-strong);
+}
+input[type='range']::-moz-range-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--panel-edge-strong);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  margin-top: -6.5px;
+  border-radius: 9999px;
+  border: 1px solid var(--predicted);
+  background: var(--ink-raised);
+  box-shadow: 0 0 8px -2px var(--predicted);
+}
+input[type='range']::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--predicted);
+  background: var(--ink-raised);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-sweep,
+  .animate-sheet,
   .animate-pulse-soft {
     animation: none;
   }

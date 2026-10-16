@@ -27,7 +27,14 @@ function formatSite(latitude: number, longitude: number): string {
   return `${Math.abs(latitude).toFixed(4)}° ${ns}  ${Math.abs(longitude).toFixed(4)}° ${ew}`;
 }
 
-export function TopBar({ onRequestLocation }: { onRequestLocation: () => void }) {
+export function TopBar({
+  onRequestLocation,
+  compact = false,
+}: {
+  onRequestLocation: () => void;
+  /** Phone layout: three stacked rows instead of three side-by-side sections. */
+  compact?: boolean;
+}) {
   const site = useOmniEye((s) => s.site);
   const siteSource = useOmniEye((s) => s.siteSource);
   const time = useOmniEye((s) => s.time);
@@ -40,6 +47,83 @@ export function TopBar({ onRequestLocation }: { onRequestLocation: () => void })
 
   const [editing, setEditing] = useState(false);
   const siteMeta = SITE_SOURCE_LABEL[siteSource] ?? SITE_SOURCE_LABEL.default;
+
+  const timeText = time.toISOString().replace('T', ' ').slice(0, 19);
+
+  if (compact) {
+    return (
+      <Panel className="pointer-events-auto relative w-full divide-y divide-[var(--panel-edge)]">
+        {/* Identity and the two things that qualify the clock. */}
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5">
+          <span className="readout text-[13px] font-semibold tracking-[0.28em]">OMNIEYE</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setTimeMode(timeMode === 'live' ? 'frozen' : 'live')}
+              className="readout rounded-sm px-1.5 py-1 text-[9px] uppercase tracking-[0.14em]"
+              style={{
+                color: timeMode === 'live' ? 'var(--matched)' : 'var(--warn)',
+                background: timeMode === 'live' ? 'rgba(111,240,205,0.10)' : 'rgba(255,207,112,0.10)',
+              }}
+              aria-label={timeMode === 'live' ? 'Following the clock. Tap to freeze.' : 'Held. Tap to follow the clock.'}
+            >
+              {timeMode === 'live' ? 'live' : 'held'}
+            </button>
+            {timeProvenance && (
+              <Confidence level={timeProvenance.confidence} title={timeProvenance.note}>
+                {timeProvenance.source === 'gps' ? 'gps' : timeProvenance.confidence}
+              </Confidence>
+            )}
+          </div>
+        </div>
+
+        {/* When. */}
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className="flex w-full items-baseline justify-between gap-2 px-3 py-1.5 text-left"
+          aria-label="Set the observation time"
+        >
+          <span className="readout text-[13px] leading-tight">
+            {timeText}
+            <span className="ml-1 text-[9px] text-[var(--text-faint)]">UTC</span>
+          </span>
+          {sky && (
+            <span className="readout text-[10px] text-[var(--text-faint)]">
+              sun {formatDeg(sky.sunAltitude)} · {sky.twilight}
+            </span>
+          )}
+        </button>
+
+        {/* Where. */}
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <Confidence level={siteMeta.level}>{siteMeta.text}</Confidence>
+            <span className="readout truncate text-[11px]">{formatSite(site.latitude, site.longitude)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onRequestLocation}
+            className="readout shrink-0 py-1 text-[10px] text-[var(--predicted)]"
+          >
+            locate
+          </button>
+        </div>
+
+        {editing && (
+          <TimeEditor
+            compact
+            value={time}
+            onCommit={(d) => {
+              setTime(d);
+              setEditing(false);
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        )}
+      </Panel>
+    );
+  }
 
   return (
     <Panel className="pointer-events-auto flex items-stretch divide-x divide-[var(--panel-edge)]">
@@ -130,17 +214,19 @@ function TimeEditor({
   value,
   onCommit,
   onCancel,
+  compact = false,
 }: {
   value: Date;
   onCommit: (date: Date) => void;
   onCancel: () => void;
+  compact?: boolean;
 }) {
   const [text, setText] = useState(value.toISOString().slice(0, 19));
   const parsed = new Date(`${text}Z`);
   const valid = !Number.isNaN(parsed.getTime());
 
   return (
-    <div className="absolute left-0 top-full mt-1 w-[320px]">
+    <div className={compact ? 'absolute inset-x-0 top-full mt-1' : 'absolute left-0 top-full mt-1 w-[320px]'}>
       <Panel className="p-3">
         <span className="label-caps">Observation time · UTC</span>
         <input
@@ -151,7 +237,7 @@ function TimeEditor({
             if (e.key === 'Escape') onCancel();
           }}
           spellCheck={false}
-          className="readout mt-2 w-full rounded-sm border border-[var(--panel-edge-strong)] bg-black/40 px-2 py-1.5 text-[13px] outline-none focus:border-[var(--predicted)]"
+          className="readout mt-2 w-full rounded-sm border border-[var(--panel-edge-strong)] bg-black/40 px-2 py-1.5 text-[16px] outline-none focus:border-[var(--predicted)] md:text-[13px]"
         />
         <Rule className="my-2" />
         <div className="flex items-center justify-between">

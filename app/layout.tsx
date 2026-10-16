@@ -18,6 +18,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  // Lets the scene run edge to edge under the notch and home indicator; the
+  // chrome then keeps clear of them with env(safe-area-inset-*).
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

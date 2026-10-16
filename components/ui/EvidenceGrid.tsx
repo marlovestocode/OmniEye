@@ -25,11 +25,11 @@ export interface EvidenceGridProps {
 
 export function EvidenceGrid({ summary, hasObservation, hasSolve }: EvidenceGridProps) {
   return (
-    <Panel className="w-[248px] overflow-hidden">
+    <Panel className="w-full overflow-hidden md:w-[248px]">
       <PanelHeader title="Evidence" />
 
       <div className="p-2">
-        <div className="grid grid-cols-[62px_1fr_1fr] gap-1 text-[9px]">
+        <div className="grid grid-cols-[62px_1fr_1fr] gap-1 text-[9px] md:grid-cols-[62px_1fr_1fr]">
           <span />
           <span className="label-caps !text-[8.5px] pb-1 text-center">detected</span>
           <span className="label-caps !text-[8.5px] pb-1 text-center">not detected</span>
